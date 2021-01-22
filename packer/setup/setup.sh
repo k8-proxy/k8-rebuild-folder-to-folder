@@ -1,20 +1,26 @@
 #!/bin/bash
 
-# wait till apt is available
-while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
-
 # get source code
 cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main && cd ../
 
-# build docker images
-sudo apt-get install \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common -y
+# install docker and docker-compose
+END=$((SECONDS+300))
+# retry till apt is available
+while [ $SECONDS -lt $END ]; do
+    sleep 10s
+    sudo apt update
+        sudo apt-get install \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common -y
+    if [[ $? -eq 0 ]];then
+    break
+    fi
+done
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 sudo add-apt-repository \
    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
