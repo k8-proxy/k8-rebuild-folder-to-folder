@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # mount EFS to /data/folder-to-folder
-MOUNT_PATH=${1:-/data/folder-to-folder}
-EFS_DOMAIN=${2:-fs-04997e31.efs.eu-west-1.amazonaws.com}
+EFS_DOMAIN=${1:-fs-04997e31.efs.eu-west-1.amazonaws.com}
+MOUNT_PATH=${2:-/data/folder-to-folder}
 sudo mkdir -p $MOUNT_PATH
 sudo apt update
 sudo apt install nfs-common -y

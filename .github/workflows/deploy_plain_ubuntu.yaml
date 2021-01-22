@@ -1,0 +1,77 @@
+# This is a basic workflow to help you get started with Actions
+
+name: deploy-plain-ubuntu
+env:
+  AWS_DEFAULT_REGION: eu-west-1
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      mount_path:
+        default: "/home/glasswall/folder-to-folder"
+        description: "Mount path where EFS should be mounted."
+        required: false
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  deploy-ami:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Get the current instance id
+        id: get_id
+        run: |
+          # instance_id="${{ steps.deploy.outputs.instance_id }}"
+          instance_id=$(aws ec2 describe-instances --filters 'Name=tag:Name,Values=k8-rebuild-folder-to-folder-user-vm' "Name=instance-state-name,Values=running" --output text --query 'Reservations[*].Instances[*].InstanceId')
+          echo ::set-output name=instance_id::$instance_id
+          
+      - name: Deploy plain Ubuntu to AWS
+        id: deploy
+        run: |
+          ami_id=ami-0a224dd3649c06bce
+          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=k8-rebuild-folder-to-folder-user-vm}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
+          sleep 1m
+          instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
+          echo "$instance_id is created."
+          instance_description=$(aws ec2 describe-instances --instance-ids $instance_id)
+          instance_state=$(echo $instance_description | jq -r ".Reservations[0].Instances[0].State.Name")
+          echo "Instance state is $instance_state"
+          if [[ "$instance_state" != "running" ]];then
+              echo "EC2 instance $instance_id created from AMI has failed to start in time, terminating the instance." 
+              aws ec2 terminate-instances --instance-ids $instance_id
+              exit -1
+          fi
+          instance_ip=$(echo $instance_description | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+          echo "SSH to the VM at: ${instance_ip}"
+          echo ::set-output name=instance_ip::$instance_ip
+          echo ::set-output name=instance_id::$instance_id
+          instance_id="${{ steps.get_id.outputs.instance_id }}"
+          if [[ ! -z "$instance_id" ]]; then
+            echo "$instance_id" | while IFS= read -r line ; do aws ec2 terminate-instances --instance-ids $line || true; done
+          fi
+
+      - name: Mount EFS on the instance
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.deploy.outputs.instance_ip }}
+          username: glasswall
+          password: '${{ secrets.SSH_PASSWORD }}'
+          script: |
+            MOUNT_PATH=${{ github.event.inputs.mount_path }}
+            MOUNT_PATH=${MOUNT_PATH:-/home/glasswall/folder-to-folder}
+            sudo mkdir -p $MOUNT_PATH
+            sudo apt update
+            sudo apt install nfs-common -y
+            sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-04997e31.efs.eu-west-1.amazonaws.com:/ $MOUNT_PATH
+            sudo chown -R $USER:$USER $MOUNT_PATH
+            cd $MOUNT_PATH && mkdir -p input && mkdir -p output && mkdir -p error && mkdir -p log
