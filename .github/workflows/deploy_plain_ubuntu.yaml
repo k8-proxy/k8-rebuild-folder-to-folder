@@ -67,12 +67,18 @@ jobs:
           username: glasswall
           password: '${{ secrets.SSH_PASSWORD }}'
           script: |
-            set -e
             MOUNT_PATH=${{ github.event.inputs.mount_path }}
             MOUNT_PATH=${MOUNT_PATH:-/home/glasswall/folder-to-folder}
             sudo mkdir -p $MOUNT_PATH
             # wait till apt is available
-            while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
+            END=$((SECONDS+300))
+            while [ $SECONDS -lt $END ]; do
+              sleep 10s
+              sudo apt update
+              if [[ $? -eq 0 ]];then
+                break
+              fi
+            done
             sudo apt update
             sudo apt install nfs-common -y
             sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-04997e31.efs.eu-west-1.amazonaws.com:/ $MOUNT_PATH
