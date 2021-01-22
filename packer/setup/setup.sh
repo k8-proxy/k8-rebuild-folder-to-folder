@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# update
-sudo apt-get update
+# wait till apt is available
+while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
 
 # get source code
 cd ~
