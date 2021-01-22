@@ -7,7 +7,7 @@ env:
 # events but only for the master branch
 on:
   push:
-    branches: [ main, develop, update_scripts ]
+    branches: [ main, develop ]
   workflow_dispatch:
     inputs:
       mount_path:
