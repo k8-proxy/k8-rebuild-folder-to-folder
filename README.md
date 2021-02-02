@@ -5,17 +5,19 @@
 ## Process Overview
 
 <p align="center">
-<img src="imgs/k8-rebuild-folder-to-folder.png" width="500">
+<img src="https://user-images.githubusercontent.com/70108899/106617806-3a5ed200-656f-11eb-851a-530136d3a68c.PNG" width="500">
 </p>
 
 ### Creating custom AMI
 
-* In this documentation, we will be creating two instances. `k8-f2f-service` in which all processing happens and `k8-f2f-user` which acts as an instance for users to login and use services
+* In this documentation, we will be creating two instances:
+  - `k8-f2f-service` - where all processing is happening (service OVA contains File Handling Service and Rebuild API)
+  - `k8-f2f-user` - which acts as an instance for users to login and use service
 * To create a custom AMI, OVA file stored in S3 bucket need to be imported. 
 
 ```
-  Service_OVA_Path   :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
-  User_OVA_Path      :   s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/user-vm/Ubuntu18.04.5.ova
+  Service_OVA_Path   :   https://glasswall-sow-ova.s3-eu-west-1.amazonaws.com/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-1f57e688e7eca0801047a1d45a8dc1b383d08585.ova
+  User_OVA_Path      :   https://glasswall-sow-ova.s3-eu-west-1.amazonaws.com/vms/k8-rebuild-folder-to-folder/user-vm/Ubuntu18.04.5.ova
 ```
 
 * Run below commands from *your local machine* to import ova file from s3 bucket and create custom AMI
@@ -82,7 +84,7 @@
   $ ssh glasswall@<instanceip>
 ```
   - Note: Since instance is created using custom AMI, SSH authentication is allowed only by username and password combination. SSH key supplied in AWS console cannot be used.
-  - Default password is `Gl@$$wall`
+  - Default password is shared
   - Once you login you can change default password.
 ```shell
   $ passwd glasswall
@@ -91,6 +93,7 @@
 ### Proceed to creation and mounting of EFS volume which is used to store input and processed output files.
 
 ### Creating and mounting EFS Volume
+
 `Using AWS Console:`
 * To create EFS volume, login to AWS Console and navigate to [https://eu-west-1.console.aws.amazon.com/efs/]
 * Click on `Create file system` and click on `Customize` 
@@ -140,6 +143,12 @@
   
 ### Mounting EFS Volume
 
+<p align="center">
+<img src="https://user-images.githubusercontent.com/70108899/106618748-19e34780-6570-11eb-8b06-43336c593604.PNG" width="500">
+</p>
+
+* Note: Log folder contains logs from files that are not processed correctly. Other log details can be found in `GlasswallFileProcessingStatus.txt` under each processed zip file (in both error or output folder)
+
 * SSH to `k8-f2f-service` instance
 * Run below command which will mount EFS volume at `/data/folder-to-folder`
 
@@ -173,7 +182,9 @@
 #### Demo from `k8-f2f-service`:
 
 * To run folder to folder service, SSH to `k8-f2f-service`
-* Copy zip files from your local machine to `/data/folder-to-folder/input`
+* Copy zip files from your local machine to `/data/folder-to-folder/`
+* Transfer the copied files from above folder to `/data/folder-to-folder/input`
+* **Note: Above two steps can be done directly by transferring file straight to `/data/folder-to-folder/input` but in case of any network interruption or file corruption during the transfer, file will immediately end up in error folder. This step-by-step process avoids that scenario.**
 * You can find zip test files examples at [test_files folder](test_files)
 ```script
   $ scp /local/directory/files.zip glasswall@<k8-f2f-service IP>:/data/folder-to-folder/input
@@ -200,7 +211,9 @@ sudo docker-compose restart
 #### Demo from `k8-f2f-user`:
 
 * To run folder to folder service, SSH to `k8-f2f-user`
-* Zip the files that needs to be processed. Copy the zip file to `<mount path>/input`
+* Zip the files that needs to be processed. Copy the zip file to `<mount path>`
+* Transfer the copied files from above folder to `<mount path>/input`
+* **Note: Above two steps can be done directly by transferring file straight to `/data/folder-to-folder/input` but in case of any network interruption or file corruption during the transfer, file will immediately end up in error folder. This step-by-step process avoids that scenario.**
 * You can find zip test files examples at [test_files folder](test_files)
 ```script
   $ scp /local/directory/files.zip glasswall@<k8-f2f-user IP>:<mount path>/input
