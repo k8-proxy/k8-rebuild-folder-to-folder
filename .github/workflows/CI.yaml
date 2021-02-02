@@ -60,6 +60,7 @@ jobs:
         BRANCH=$(echo ${{ github.ref }} | cut -d"/" -f3)
         cat > packer/setup/env <<EOF
         BRANCH=$BRANCH
+        SSH_PASSWORD=${{ secrets.F2F_PASSWORD }}
         EOF
         TMPDIR=/var/tmp packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
     
@@ -121,7 +122,7 @@ jobs:
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
           username: glasswall
-          password: '${{ secrets.SSH_PASSWORD }}'
+          password: '${{ secrets.F2F_PASSWORD }}'
           script: |
             MOUNT_PATH=/data/folder-to-folder
             sudo mkdir -p $MOUNT_PATH
