@@ -35,7 +35,7 @@
 
   Example: $ ./packer/import-ova.sh s3://glasswall-sow-ova/vms/k8-rebuild-folder-to-folder/k8-rebuild-folder-to-folder-f782a8ab15b1067ab31b43a7c451a8c759b76f58.ova
  ```
-
+* If you run into issue `./packer/import-ova.sh: line 28: jq: command not found` install jq (ex. on linux run `sudo apt-get install jq`)
 * Once import task is completed, above command produces output similar to `Imported AMI ID is: <AMI ID>`. Note the value of AMI ID which is used in launching instance.
   
  `k8-f2f-user`:
