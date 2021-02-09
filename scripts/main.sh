@@ -136,7 +136,7 @@ else
 fi
 
 # create service instance
-result=$(aws ec2 run-instances --image-id $SERVICE_AMI_ID --count 1 --instance-type t2.large  --subnet-id $SUBNET_ID --security-group-ids $SECURITY_GROUP_ID --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=service-k8-rebuild-folder-to-folder}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=20,VolumeType=gp2}")
+result=$(aws ec2 run-instances --image-id $SERVICE_AMI_ID --count 1 --instance-type t2.large  --subnet-id $SUBNET_ID --security-group-ids $SECURITY_GROUP_ID --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=service-k8-rebuild-folder-to-folder}, {Key=Delete,Value=No},{Key=Scope,Value=icap-server},{Key=Owner,Value=k8-rebuild-f2f-scripts},{Key=Team,Value=k8-rebuild-f2f}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=20,VolumeType=gp2}")
 sleep 4m
 instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
 echo "$instance_id is created."
@@ -159,7 +159,7 @@ sshpass -p "${SERVICE_INSTANCE_PASSWORD}" ssh -o StrictHostKeyChecking=no glassw
 if [[ $SKIP_USER_INSTANCE -eq 1 ]]; then
     exit 0
 else
-    result=$(aws ec2 run-instances --image-id $USER_AMI_ID --count 1 --instance-type t2.micro --subnet-id $SUBNET_ID --security-group-ids $SECURITY_GROUP_ID --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=user-k8-rebuild-folder-to-folder}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=8,VolumeType=gp2}")
+    result=$(aws ec2 run-instances --image-id $USER_AMI_ID --count 1 --instance-type t2.micro --subnet-id $SUBNET_ID --security-group-ids $SECURITY_GROUP_ID --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=user-k8-rebuild-folder-to-folder}, {Key=Delete,Value=No},{Key=Scope,Value=icap-server},{Key=Owner,Value=k8-rebuild-f2f-scripts},{Key=Team,Value=k8-rebuild-f2f}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=8,VolumeType=gp2}")
     sleep 4m
     instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
     echo "$instance_id is created."
