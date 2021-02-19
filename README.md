@@ -6,6 +6,11 @@
 <img src="https://user-images.githubusercontent.com/70108899/106617806-3a5ed200-656f-11eb-851a-530136d3a68c.PNG" width="500">
 </p>
 
+## Setup Overview
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/70108899/108490947-9b8ee100-72a3-11eb-8af8-3582db3210ba.png" width="500">
+</p>
 ## Make sure that all [AWS prerequisites](AWS_prerequisites.md) are in place before proceeding.
 
 - You are [authenticated to AWS CLI](AWS_prerequisites.md)
@@ -17,7 +22,7 @@
 ## Setting up Service and User OVA via shell script
 
 ```
-git pull https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
+git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
 cd k8-rebuild-folder-to-folder/scripts
 ```
 
