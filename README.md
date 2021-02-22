@@ -11,6 +11,7 @@
 <p align="center">
 <img src="https://user-images.githubusercontent.com/70108899/108490947-9b8ee100-72a3-11eb-8af8-3582db3210ba.png" width="500">
 </p>
+
 ## Make sure that all [AWS prerequisites](AWS_prerequisites.md) are in place before proceeding.
 
 - You are [authenticated to AWS CLI](AWS_prerequisites.md)
@@ -53,6 +54,12 @@ bash main.sh
   - `k8-f2f-service`- EC2 instnace in which k8-folder-folder service containers are located and which monitors and process files
   - `k8-f2f-user` - EC2 (demo) instance which is used to demonstrate file processing from another instance which can be used by normal users without needing access to `k8-f2f-service` instance
   - `k8-f2f-efs` - EFS file system which can be mounted to any number of instances for supplying file to processing service
+  - Bellow diagram shows how these 3 elements are interconnected 
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/70108899/106618748-19e34780-6570-11eb-8b06-43336c593604.PNG" width="500">
+</p>
+
 
 ### Demo from `k8-f2f-service`:
 
