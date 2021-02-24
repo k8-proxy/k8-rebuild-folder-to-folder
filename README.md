@@ -22,6 +22,13 @@
 
 ## Setting up Service and User OVA via shell script
 
+### Setup video 
+
+[![Installation Video (OVA)](https://img.youtube.com/vi/yaBPLn9ISSg/hqdefault.jpg)](https://www.youtube.com/watch?v=EA10yatzaVw&ab_channel=GlasswallEngineering)
+
+
+### Setup steps
+
 ```
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
 cd k8-rebuild-folder-to-folder/scripts
@@ -60,8 +67,11 @@ bash main.sh
 <img src="https://user-images.githubusercontent.com/70108899/106618748-19e34780-6570-11eb-8b06-43336c593604.PNG" width="500">
 </p>
 
+### How to use F2F video
 
-### Demo from `k8-f2f-service`:
+[![Installation Video (OVA)](https://img.youtube.com/vi/yaBPLn9ISSg/hqdefault.jpg)](https://www.youtube.com/watch?v=xSsD2zi0_Ho&ab_channel=GlasswallEngineering)
+
+### Steps for using `k8-f2f-service`:
 
 * To run folder to folder service, SSH to `k8-f2f-service`
 * Copy zip files from your local machine to `/data/folder-to-folder/`
@@ -90,7 +100,7 @@ cd ~/k8-rebuild-folder-to-folder
 sudo docker-compose restart
 ```
 
-### Demo from `k8-f2f-user`:
+### Steps for using `k8-f2f-user`:
 
 * To run folder to folder service, SSH to `k8-f2f-user`
 * Zip the files that needs to be processed. Copy the zip file to `<mount path>`
