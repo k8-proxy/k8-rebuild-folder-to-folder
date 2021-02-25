@@ -1,14 +1,21 @@
 # k8-rebuild-folder-to-folder
 
+## OVAs to be used 
+
+- **user OVA**: https://glasswall-sow-ova.s3-eu-west-1.amazonaws.com/vms/k8-rebuild-folder-to-folder/user-vm/Ubuntu18.04.5.ova
+- **service OVA**: https://glasswall-sow-ova.s3-eu-west-1.amazonaws.com/vms/k8-rebuild-folder-to-folder/k8-rebuild-fol[…]r-651161dccadd8d3c69bc2f2e0a69fa808e7fc458.ova
+- **Important note**: Above OVAs need to be uploaded to your AWS S3 bucket. Once uploaded, use corresponding S3 URL when editing `config.env` during the setup phase.
+
+
 ## Process Overview
 
-<p align="center">
+<p align="left">
 <img src="https://user-images.githubusercontent.com/70108899/106617806-3a5ed200-656f-11eb-851a-530136d3a68c.PNG" width="500">
 </p>
 
 ## Setup Overview
 
-<p align="center">
+<p align="left">
 <img src="https://user-images.githubusercontent.com/70108899/108490947-9b8ee100-72a3-11eb-8af8-3582db3210ba.png" width="500">
 </p>
 
@@ -29,9 +36,13 @@
 
 ### Setup steps
 
+**Note: Following instructions are made for Ubuntu based systems**
+
 ```
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git
 cd k8-rebuild-folder-to-folder/scripts
+#install jq
+sudo apt install jq
 ```
 
 ### In scripts subfolder edit `config.env` file:
@@ -53,6 +64,10 @@ cd k8-rebuild-folder-to-folder/scripts
 ```
 bash main.sh
 ```
+- You can get service/user instance IPs 
+    - seen next to "Warning: Permanently added..." 
+    - or by logging to AWS Console and based on instance ID that is created, search for IP in EC2 Dashboard 
+- Use above IPs to SSH to service/user instance and use them as described in following sections
 
 ### Running Service
 
@@ -63,13 +78,15 @@ bash main.sh
   - `k8-f2f-efs` - EFS file system which can be mounted to any number of instances for supplying file to processing service
   - Bellow diagram shows how these 3 elements are interconnected 
 
-<p align="center">
+
+<p align="left">
 <img src="https://user-images.githubusercontent.com/70108899/106618748-19e34780-6570-11eb-8b06-43336c593604.PNG" width="500">
 </p>
 
 ### How to use F2F video
 
 [![Installation Video (OVA)](https://img.youtube.com/vi/yaBPLn9ISSg/hqdefault.jpg)](https://www.youtube.com/watch?v=xSsD2zi0_Ho&ab_channel=GlasswallEngineering)
+
 
 ### Steps for using `k8-f2f-service`:
 
