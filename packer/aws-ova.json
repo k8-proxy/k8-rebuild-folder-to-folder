@@ -19,7 +19,7 @@
         "ssh_timeout": "20m",
         "type": "amazon-ebs",
         "ami_regions": ["eu-west-1"],
-        "source_ami": "ami-0b1ea6f42e1e633a2",
+        "source_ami": "ami-076e786e409051922",
         "tags": {
             "OS_Version": "Ubuntu-18.04",
             "Base_AMI_Name": "{{ .SourceAMIName }}",
