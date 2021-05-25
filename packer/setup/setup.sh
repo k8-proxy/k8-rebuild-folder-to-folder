@@ -23,7 +23,7 @@ END=$((SECONDS+300))
 while [ $SECONDS -lt $END ]; do
     sleep 10s
     sudo apt update
-        sudo apt-get install \
+    sudo apt-get install \
         apt-transport-https \
         ca-certificates \
         curl \
