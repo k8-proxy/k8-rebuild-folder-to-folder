@@ -30,6 +30,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             {
                 _client = new HttpClient();
             }
+            _client.Timeout = TimeSpan.FromMilliseconds(System.Threading.Timeout.Infinite);
         }
 
         public async Task<IApiResponse> PostAsync(string url, HttpContent data)
@@ -40,7 +41,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
                 HttpResponseMessage response = await _client.PostAsync(url, data);
                 apiResponse.Success = response.IsSuccessStatusCode;
                 apiResponse.Message = await response.Content.ReadAsStringAsync();
-                if(response.Content.Headers.ContentType.MediaType== Constants.MediaType)
+                if (response.Content.Headers.ContentType.MediaType == Constants.MediaType)
                 {
                     apiResponse.Content = response.Content;
                 }
@@ -48,7 +49,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             catch (Exception ex)
             {
                 apiResponse.Message = ex.Message;
-                _logger.LogError(ex.Message);
+                _logger.LogError($"Exception occured while processing folder errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
             }
             return apiResponse;
         }
