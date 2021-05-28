@@ -19,7 +19,7 @@
         "ssh_timeout": "20m",
         "type": "amazon-ebs",
         "ami_regions": ["eu-west-1"],
-        "source_ami": "ami-0a224dd3649c06bce",
+        "source_ami": "ami-07e3367d10a9901d4",
         "tags": {
             "OS_Version": "Ubuntu-18.04",
             "Base_AMI_Name": "{{ .SourceAMIName }}",
@@ -28,7 +28,9 @@
         "run_tags": {
             "Name": "Packer Builder k8-rebuild-folder-to-folder",
             "Team": "k8-proxy/k8-rebuild",
-            "Owner": "githubactionAMIpacker"
+            "Owner": "githubactionAMIpacker",
+            "Scope": "k8-rebuild-f2f",
+            "Delete": "No"
         },
         "security_group_ids": "{{user `security_group_ids`}}",
         "launch_block_device_mappings": [
