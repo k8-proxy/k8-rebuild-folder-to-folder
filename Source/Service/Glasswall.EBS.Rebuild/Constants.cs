@@ -15,7 +15,7 @@
         public const string LogFile = "log.txt";
         public const string SLASH = "/";
         public const int RetryCount = 3;
-        public const double CronjobPeriod = 15;
+        public const double CronJobPeriod = 15;
         public const string ForldersPath = "/data/folder-to-folder";
     }
 }

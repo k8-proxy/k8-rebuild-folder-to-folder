@@ -7,7 +7,7 @@ namespace Glasswall.EBS.Rebuild.ConfigLoaders
         public static IEbsConfiguration SetDefaults(IEbsConfiguration configuration)
         {
             configuration.RETRY_COUNT = Constants.RetryCount;
-            configuration.CRONJOB_PERIOD = Constants.CronjobPeriod;
+            configuration.CRONJOB_PERIOD = Constants.CronJobPeriod;
             configuration.FORLDERS_PATH = Constants.ForldersPath;
             return configuration;
         }
