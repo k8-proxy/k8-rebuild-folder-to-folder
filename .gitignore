@@ -245,3 +245,6 @@ _Pvt_Extensions
 
 # Serverless directories
 .serverless
+
+# Launch Settings
+Source/Service/Glasswall.EBS.Rebuild/Properties/launchSettings.json
