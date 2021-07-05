@@ -60,6 +60,7 @@ jobs:
         BRANCH=$(echo ${{ github.ref }} | cut -d"/" -f3)
         cat > packer/setup/env <<EOF
         BRANCH=$BRANCH
+        SSH_PASSWORD=${{ secrets.F2F_PASSWORD }}
         EOF
         TMPDIR=/var/tmp packer build -color=false -on-error=cleanup -var github_sha=${{ github.sha }} -var vm_name=k8-rebuild-folder-to-folder -var region=${{ env.AWS_DEFAULT_REGION }} -var aws_access_key=${{ secrets.AWS_ACCESS_KEY }} -var aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }} --var ssh_password='${{ secrets.SSH_PASSWORD }}' packer/aws-ova.json
     
@@ -94,8 +95,8 @@ jobs:
         run: |
           BRANCH=$(echo ${{ github.ref }} | cut -d"/" -f3)
           ami_id=$(aws ec2 describe-images --filters "Name=name,Values=k8-rebuild-folder-to-folder-${{ github.sha }}" --query 'Images[*].[ImageId]' --output text)
-          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=${BRANCH}-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=20,VolumeType=gp2}")
-          sleep 1m
+          result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications "ResourceType=instance, Tags=[{Key=Name,Value=${BRANCH}-k8-rebuild-folder-to-folder}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=Delete,Value=No}, {Key=Scope,Value=k8-rebuild-folder-to-folder}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]" --block-device-mappings "DeviceName=/dev/sda1,Ebs={DeleteOnTermination=true,VolumeSize=20,VolumeType=gp2}")
+          sleep 2m
           instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")
           echo "$instance_id is created."
           instance_description=$(aws ec2 describe-instances --instance-ids $instance_id)
@@ -121,7 +122,7 @@ jobs:
         with:
           host: ${{ steps.deploy.outputs.instance_ip }}
           username: glasswall
-          password: '${{ secrets.SSH_PASSWORD }}'
+          password: '${{ secrets.F2F_PASSWORD }}'
           script: |
             MOUNT_PATH=/data/folder-to-folder
             sudo mkdir -p $MOUNT_PATH

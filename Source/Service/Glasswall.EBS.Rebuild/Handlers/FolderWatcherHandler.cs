@@ -1,12 +1,13 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Linq;
-using System.Threading;
+﻿using Glasswall.EBS.Rebuild.Configuration;
 using Glasswall.EBS.Rebuild.Response;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Glasswall.EBS.Rebuild.Handlers
 {
@@ -14,21 +15,24 @@ namespace Glasswall.EBS.Rebuild.Handlers
     {
         private readonly ILogger<FolderWatcherHandler> _logger;
         private readonly IHttpHandler _httpHandler;
+        private readonly IZipHandler _zipHandler;
+        private readonly IEbsConfiguration _configuration;
         private Timer _timer;
 
-        public FolderWatcherHandler(string path, ILogger<FolderWatcherHandler> logger, IHttpHandler httpHandler)
+        public FolderWatcherHandler(ILogger<FolderWatcherHandler> logger, IHttpHandler httpHandler, IZipHandler zipHandler, IEbsConfiguration configuration)
         {
-            Path = path;
-            _logger = logger;
-            _httpHandler = httpHandler;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _httpHandler = httpHandler ?? throw new ArgumentNullException(nameof(httpHandler));
+            _zipHandler = zipHandler ?? throw new ArgumentNullException(nameof(zipHandler));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            Path = System.IO.Path.Combine(_configuration.FORLDERS_PATH, Constants.InputFolder);
         }
 
         public string Path { get; private set; }
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            double.TryParse(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.CronjobPeriod), out double cronjobPeriodInSeconds);
-            _timer = new Timer(PullFolder, null, TimeSpan.Zero, TimeSpan.FromSeconds(cronjobPeriodInSeconds));
+            _timer = new Timer(PullFolder, null, TimeSpan.Zero, TimeSpan.FromSeconds(_configuration.CRONJOB_PERIOD));
             return Task.CompletedTask;
         }
 
@@ -45,44 +49,229 @@ namespace Glasswall.EBS.Rebuild.Handlers
 
         public async Task ProcessFolder()
         {
-            string url = $"{Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.RebuildApiBaseUrl)}{Constants.ZipFileApiPath}";
+            string processingFolderPath = System.IO.Path.Combine(_configuration.FORLDERS_PATH, Constants.ProcessingFolder);
+            string tempFolderPath = System.IO.Path.Combine(processingFolderPath, Guid.NewGuid().ToString());
             try
             {
-                foreach (string file in Directory.EnumerateFiles(Path, Constants.ZipSearchPattern))
+                MoveInputFilesToTempLocation(tempFolderPath);
+                foreach (string inputFile in Directory.EnumerateFiles(tempFolderPath, Constants.ZipSearchPattern))
                 {
-                    MultipartFormDataContent multiFormData = new MultipartFormDataContent();
-                    FileStream fs = File.OpenRead(file);
-                    multiFormData.Add(new StreamContent(fs), Constants.FileKey, System.IO.Path.GetFileName(file));
-                    IApiResponse response = await _httpHandler.PostAsync(url, multiFormData);
-                    string rawFilePath = file.Substring(0, file.Substring(0, file.LastIndexOf("/")).LastIndexOf("/"));
-                    string destinationPath = string.Empty;
-                    if (response.Success)
+                    bool processed = false;
+                    int retryCount = 0;
+                    do
                     {
-                        destinationPath = System.IO.Path.Combine(rawFilePath, Constants.OutputFolder, System.IO.Path.GetFileName(file));
-                        using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write))
+                        processed = await ProcessFile(tempFolderPath, inputFile, retryCount);
+
+                        if (!processed)
                         {
-                            await response.Content.CopyToAsync(fileStream);
+                            retryCount += 1;
                         }
-                        File.Delete(file);
-                        _logger.LogInformation($"Successfully processed the file {file}");
-                    }
-                    else
-                    {
-                        destinationPath = System.IO.Path.Combine(rawFilePath, Constants.ErrorFolder, System.IO.Path.GetFileName(file));
-                        File.Move(file, destinationPath, true);
-                        _logger.LogInformation($"Error while processing the file {file} and error is {response.Message}");
-                    }
+                    } while (!processed);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Exception occured while processing folder", ex.Message);
+                _logger.LogError($"Exception occured while processing folder errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
             }
+            finally
+            {
+                if (Directory.Exists(tempFolderPath))
+                {
+                    Directory.Delete(tempFolderPath, true);
+                }
+            }
+        }
+
+        private async Task<bool> ProcessFile(string tempFolderPath, string inputFile, int retryCount)
+        {
+            bool success = false;
+            string fileName = System.IO.Path.GetFileName(inputFile);
+            string rawFilePath = string.Empty;
+            string tempOutputFilePath;
+
+            try
+            {
+                if (retryCount > 0)
+                {
+                    _logger.LogInformation($"Retry Count: {retryCount} for file: {fileName}");
+                }
+
+                MultipartFormDataContent multiFormData = new MultipartFormDataContent();
+                FileStream fs = File.OpenRead(inputFile);
+                multiFormData.Add(new StreamContent(fs), Constants.FileKey, fileName);
+                string url = $"{_configuration.REBUILD_API_BASE_URL}{Constants.ZipFileApiPath}";
+                IApiResponse response = await _httpHandler.PostAsync(url, multiFormData);
+                rawFilePath = inputFile.Substring(0, inputFile.Substring(0, inputFile.LastIndexOf(Constants.SLASH)).LastIndexOf(Constants.SLASH));
+                rawFilePath = rawFilePath.Substring(0, rawFilePath.LastIndexOf(Constants.SLASH));
+
+                if (response.Success)
+                {
+                    string outputFilePath = System.IO.Path.Combine(rawFilePath, Constants.OutputFolder, fileName);
+                    outputFilePath = NextAvailableFilename(outputFilePath);
+                    tempOutputFilePath = System.IO.Path.Combine(tempFolderPath, $"{Guid.NewGuid()}", fileName);
+
+                    if (!Directory.Exists(System.IO.Path.GetDirectoryName(tempOutputFilePath)))
+                    {
+                        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(tempOutputFilePath));
+                    }
+
+                    using (FileStream fileStream = new FileStream(tempOutputFilePath, FileMode.Create, FileAccess.Write))
+                    {
+                        if (response.Content != null)
+                        {
+                            await response.Content.CopyToAsync(fileStream);
+                            SyncUnSupportedFilesWithSanitizedZipFile(tempFolderPath, inputFile, tempOutputFilePath, outputFilePath);
+                        }
+                    }
+
+                    _logger.LogInformation($"Successfully processed the file: {fileName}");
+                    success = true;
+                }
+                else
+                {
+                    _logger.LogError($"Error while processing file: {fileName} errorMessage: {response?.Exception?.Message} and errorStackTrace: {response?.Exception?.StackTrace}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while processing file {fileName}, errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+            }
+            finally
+            {
+                if (retryCount == _configuration.RETRY_COUNT)
+                {
+                    success = true;
+                    tempOutputFilePath = System.IO.Path.Combine(rawFilePath, Constants.ErrorFolder, fileName);
+                    tempOutputFilePath = NextAvailableFilename(tempOutputFilePath);
+                    File.Move(inputFile, tempOutputFilePath);
+                }
+            }
+            return success;
+        }
+
+        private void MoveInputFilesToTempLocation(string tempFolderPath)
+        {
+            if (!Directory.Exists(tempFolderPath))
+            {
+                Directory.CreateDirectory(tempFolderPath);
+            }
+
+            foreach (string file in Directory.EnumerateFiles(Path, Constants.ZipSearchPattern))
+            {
+                string destFile = System.IO.Path.Combine(tempFolderPath, System.IO.Path.GetFileName(file));
+                if (!File.Exists(destFile))
+                {
+                    File.Move(file, destFile);
+                }
+            }
+        }
+
+        private string NextAvailableFilename(string path)
+        {
+            string numberPattern = " ({0})";
+
+            if (!File.Exists(path))
+            {
+                return path;
+            }
+
+            if (System.IO.Path.HasExtension(path))
+            {
+                return GetNextFilename(path.Insert(path.LastIndexOf(System.IO.Path.GetExtension(path)), numberPattern));
+            }
+
+            return GetNextFilename(path + numberPattern);
+        }
+
+        private string GetNextFilename(string pattern)
+        {
+            string tmp = string.Format(pattern, 1);
+            if (tmp == pattern)
+            {
+                throw new ArgumentException("The pattern must include an index place-holder", "pattern");
+            }
+
+            if (!File.Exists(tmp))
+            {
+                return tmp;
+            }
+
+            int min = 1, max = 2;
+
+            while (File.Exists(string.Format(pattern, max)))
+            {
+                min = max;
+                max *= 2;
+            }
+
+            while (max != min + 1)
+            {
+                int pivot = (max + min) / 2;
+                if (File.Exists(string.Format(pattern, pivot)))
+                {
+                    min = pivot;
+                }
+                else
+                {
+                    max = pivot;
+                }
+            }
+
+            return string.Format(pattern, max);
         }
 
         public void Dispose()
         {
             _timer?.Dispose();
+        }
+
+        private void SyncUnSupportedFilesWithSanitizedZipFile(string tempFolderPath, string inputFile, string tempOutputFilePath, string outputFilePath)
+        {
+            try
+            {
+                string input = $"{Guid.NewGuid()}";
+                string output = $"{Guid.NewGuid()}";
+                string tempSourceFolderPath = System.IO.Path.Combine(tempFolderPath, input);
+                string tempDestinationFolderPath = System.IO.Path.Combine(tempFolderPath, output);
+
+                if (!Directory.Exists(tempSourceFolderPath))
+                {
+                    Directory.CreateDirectory(tempSourceFolderPath);
+                }
+
+                if (!Directory.Exists(tempDestinationFolderPath))
+                {
+                    Directory.CreateDirectory(tempDestinationFolderPath);
+                }
+
+                _zipHandler.ExtractZipFile(inputFile, null, tempSourceFolderPath);
+                _zipHandler.ExtractZipFile(tempOutputFilePath, null, tempDestinationFolderPath);
+                IEnumerable<string> inputZipFiles = Directory.GetFiles(tempSourceFolderPath, Constants.AllFilesSearchPattern, SearchOption.AllDirectories).Select(x => x[(x.IndexOf($"{Constants.SLASH}{input}{Constants.SLASH}") + input.Length + 2)..]);
+                IEnumerable<string> outputZipFiles = Directory.GetFiles(tempDestinationFolderPath, Constants.AllFilesSearchPattern, SearchOption.AllDirectories).Select(x => x[(x.IndexOf($"{Constants.SLASH}{output}{Constants.SLASH}") + output.Length + 2)..]);
+                List<string> unsupportedFiles = inputZipFiles.Except(outputZipFiles).ToList();
+
+                if (unsupportedFiles.Any())
+                {
+                    unsupportedFiles.ForEach(x =>
+                    {
+                        string destinationFilePath = System.IO.Path.Combine(tempDestinationFolderPath, x);
+                        string directoryName = System.IO.Path.GetDirectoryName(destinationFilePath);
+
+                        if (!Directory.Exists(directoryName))
+                        {
+                            Directory.CreateDirectory(directoryName);
+                        }
+
+                        File.Copy(System.IO.Path.Combine(tempSourceFolderPath, x), destinationFilePath);
+                    });
+                }
+
+                _zipHandler.CreateZipFile(outputFilePath, null, tempDestinationFolderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while processing file {System.IO.Path.GetFileName(inputFile)} errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+            }
         }
     }
 }

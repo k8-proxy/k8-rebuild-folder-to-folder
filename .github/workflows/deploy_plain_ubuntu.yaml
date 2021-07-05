@@ -38,7 +38,7 @@ jobs:
       - name: Deploy plain Ubuntu to AWS
         id: deploy
         run: |
-          ami_id=ami-0a224dd3649c06bce
+          ami_id=ami-07e3367d10a9901d4
           result=$(aws ec2 run-instances --image-id $ami_id --count 1 --instance-type t2.large --key-name packer --security-group-ids sg-0120400d5eefb0b9e --tag-specifications 'ResourceType=instance, Tags=[{Key=Name,Value=k8-rebuild-folder-to-folder-user-vm}, {Key=Team, Value=k8-proxy/k8-rebuild-folder-to-folder}, {Key=Owner, Value=githubactionAMIpacker}, {Key=AMI_Name, Value=k8-rebuild-folder-to-folder-${{ github.sha }}}]')
           sleep 1m
           instance_id=$(echo $result | jq -r ".Instances[0].InstanceId")

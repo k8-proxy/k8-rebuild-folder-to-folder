@@ -23,7 +23,7 @@ END=$((SECONDS+300))
 while [ $SECONDS -lt $END ]; do
     sleep 10s
     sudo apt update
-        sudo apt-get install \
+    sudo apt-get install \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -48,3 +48,9 @@ sudo mkdir -p /data/folder-to-folder/input && sudo mkdir -p /data/folder-to-fold
 sudo chown -R $USER:$USER /data/folder-to-folder
 sudo docker-compose up -d
 sleep 10s
+
+# update password
+SSH_PASSWORD=${SSH_PASSWORD:-glasswall}
+printf "${SSH_PASSWORD}\n${SSH_PASSWORD}" | sudo passwd glasswall
+sudo sed -i "s/.*PasswordAuthentication.*/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+sudo service ssh restart
