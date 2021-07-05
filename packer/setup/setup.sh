@@ -15,7 +15,7 @@ cd ~
 git clone https://github.com/k8-proxy/k8-rebuild-folder-to-folder.git && cd k8-rebuild-folder-to-folder
 git checkout $BRANCH
 git clone https://github.com/k8-proxy/k8-rebuild.git --recursive && cd k8-rebuild && git submodule foreach git pull origin main
-cd k8-rebuild-rest-api && pushd libs && git checkout pre_release_1.1850 && popd && cd ../../
+cd k8-rebuild-rest-api && git checkout custom-tiff && pushd libs && git checkout pre_release_1.1850 && popd && cd ../../
 
 # install docker and docker-compose
 END=$((SECONDS+300))
