@@ -17,5 +17,7 @@
         public const int RetryCount = 3;
         public const double CronJobPeriod = 15;
         public const string ForldersPath = "/data/folder-to-folder";
+        public const int CheckCount = 3;
+        public const int WaitTimeMiliSec = 3000;
     }
 }
