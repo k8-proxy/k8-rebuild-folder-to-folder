@@ -40,7 +40,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             {
                 HttpResponseMessage response = await _client.PostAsync(url, data);
                 apiResponse.Success = response.IsSuccessStatusCode;
-                apiResponse.Message = await response.Content.ReadAsStringAsync();
+                apiResponse.Message = !apiResponse.Success ? await response.Content.ReadAsStringAsync() : string.Empty;
                 if (response.Content?.Headers?.ContentType?.MediaType == Constants.MediaType)
                 {
                     apiResponse.Content = response.Content;
