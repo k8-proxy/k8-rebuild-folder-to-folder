@@ -129,7 +129,14 @@ namespace Glasswall.EBS.Rebuild.Handlers
                 }
                 else
                 {
-                    _logger.LogError($"Error while processing file: {fileName} errorMessage: {response?.Exception?.Message} and errorStackTrace: {response?.Exception?.StackTrace}");
+                    if (response.Exception != null)
+                    {
+                        _logger.LogError($"Error while processing file: {fileName} errorMessage: {response.Exception.Message} and errorStackTrace: {response.Exception.StackTrace}");
+                    }
+                    else
+                    {
+                        _logger.LogError($"Error while processing file: {fileName} errorMessage: {response.Message}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -159,7 +166,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
             foreach (string file in Directory.EnumerateFiles(Path, Constants.ZipSearchPattern))
             {
                 string destFile = System.IO.Path.Combine(tempFolderPath, System.IO.Path.GetFileName(file));
-                if (!File.Exists(destFile))
+                if (!File.Exists(destFile) && CanMoveFile(file))
                 {
                     File.Move(file, destFile);
                 }
@@ -271,6 +278,30 @@ namespace Glasswall.EBS.Rebuild.Handlers
             catch (Exception ex)
             {
                 _logger.LogError($"Exception occured while processing file {System.IO.Path.GetFileName(inputFile)} errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+            }
+        }
+
+        private bool CanMoveFile(string filePath)
+        {
+            string fileName = string.Empty;
+            try
+            {
+                fileName = System.IO.Path.GetFileName(filePath);
+                long length1 = new FileInfo(filePath).Length;
+                long length2;
+                int count = 0;
+                do
+                {
+                    Thread.Sleep(Constants.WaitTimeMiliSec);
+                    length2 = new FileInfo(filePath).Length;
+                    count++;
+                } while (!length1.Equals(length2) && count != Constants.CheckCount);
+                return length1.Equals(length2) && length1 != 0 && length2 != 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while checking the file {fileName} before moving to processing folder, errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+                return false;
             }
         }
     }
