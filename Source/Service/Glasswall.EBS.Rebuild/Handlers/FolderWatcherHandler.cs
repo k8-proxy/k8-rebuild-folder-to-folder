@@ -44,6 +44,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
 
         private async void PullFolder(object state)
         {
+            ValidateConfiguration();
             await ProcessFolder();
         }
 
@@ -321,6 +322,22 @@ namespace Glasswall.EBS.Rebuild.Handlers
                 _logger.LogError($"Exception occured while fetching policy for file {zipFileName} ,errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
             }
             return string.Empty;
+        }
+
+        private void ValidateConfiguration()
+        {
+            try
+            {
+                string policyFolderPath = System.IO.Path.Combine(_configuration.FORLDERS_PATH, Constants.PolicyFolder);
+                if (!Directory.Exists(policyFolderPath))
+                {
+                    Directory.CreateDirectory(policyFolderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while creating policy folder ,errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+            }
         }
     }
 }
