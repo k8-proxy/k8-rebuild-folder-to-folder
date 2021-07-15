@@ -44,6 +44,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
 
         private async void PullFolder(object state)
         {
+            ValidateConfiguration();
             await ProcessFolder();
         }
 
@@ -99,6 +100,7 @@ namespace Glasswall.EBS.Rebuild.Handlers
                 MultipartFormDataContent multiFormData = new MultipartFormDataContent();
                 FileStream fs = File.OpenRead(inputFile);
                 multiFormData.Add(new StreamContent(fs), Constants.FileKey, fileName);
+                multiFormData.Add(new StringContent(await GetPolicyJson(fileName)), Constants.PolicyKey);
                 string url = $"{_configuration.REBUILD_API_BASE_URL}{Constants.ZipFileApiPath}";
                 IApiResponse response = await _httpHandler.PostAsync(url, multiFormData);
                 rawFilePath = inputFile.Substring(0, inputFile.Substring(0, inputFile.LastIndexOf(Constants.SLASH)).LastIndexOf(Constants.SLASH));
@@ -302,6 +304,39 @@ namespace Glasswall.EBS.Rebuild.Handlers
             {
                 _logger.LogError($"Exception occured while checking the file {fileName} before moving to processing folder, errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
                 return false;
+            }
+        }
+
+        private async Task<string> GetPolicyJson(string zipFileName)
+        {
+            try
+            {
+                string policyFilePath = System.IO.Path.Combine(_configuration.FORLDERS_PATH, Constants.PolicyFolder, Constants.PolicyFileName);
+                if (File.Exists(policyFilePath))
+                {
+                    return await File.ReadAllTextAsync(policyFilePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while fetching policy for file {zipFileName} ,errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
+            }
+            return string.Empty;
+        }
+
+        private void ValidateConfiguration()
+        {
+            try
+            {
+                string policyFolderPath = System.IO.Path.Combine(_configuration.FORLDERS_PATH, Constants.PolicyFolder);
+                if (!Directory.Exists(policyFolderPath))
+                {
+                    Directory.CreateDirectory(policyFolderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Exception occured while creating policy folder ,errorMessage: {ex.Message} and errorStackTrace: {ex.StackTrace}");
             }
         }
     }
