@@ -1,0 +1,48 @@
+{
+  "PdfContentManagement": {
+    "Metadata": 1,
+    "InternalHyperlinks": 1,
+    "ExternalHyperlinks": 1,
+    "EmbeddedFiles": 1,
+    "EmbeddedImages": 1,
+    "Javascript": 1,
+    "Acroform": 1,
+    "ActionsAll": 1,
+    "Watermark": "Glasswall Protected"
+  },
+  "ExcelContentManagement": {
+    "Metadata": 1,
+    "InternalHyperlinks": 1,
+    "ExternalHyperlinks": 1,
+    "EmbeddedFiles": 1,
+    "EmbeddedImages": 1,
+    "DynamicDataExchange": 1,
+    "Macros": 1,
+    "ReviewComments": 1
+  },
+  "PowerPointContentManagement": {
+    "Metadata": 1,
+    "InternalHyperlinks": 1,
+    "ExternalHyperlinks": 1,
+    "EmbeddedFiles": 1,
+    "EmbeddedImages": 1,
+    "Macros": 1,
+    "ReviewComments": 1
+  },
+  "WordContentManagement": {
+    "Metadata": 1,
+    "InternalHyperlinks": 1,
+    "ExternalHyperlinks": 1,
+    "EmbeddedFiles": 1,
+    "EmbeddedImages": 1,
+    "DynamicDataExchange": 1,
+    "Macros": 1,
+    "ReviewComments": 1
+  },
+  "TiffContentManagement": {
+    "Geotiff": 1,
+    "GeotiffAllowlist": [],
+    "GeotiffDenylist": [],
+    "GeotiffRequiredlist": []
+  }
+}
