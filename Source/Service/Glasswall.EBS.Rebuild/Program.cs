@@ -32,7 +32,7 @@ namespace Glasswall.EBS.Rebuild
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Error)
                 .WriteTo.Console()
-                .WriteTo.File(Path.Combine(ebsConfiguration.FORLDERS_PATH, Constants.LogFolder, Constants.LogFile), rollingInterval: RollingInterval.Day)
+                .WriteTo.File(Path.Combine(ebsConfiguration.FORLDERS_PATH, Constants.LogFolder, Constants.LogFileName), rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
                 services.AddSingleton<IHttpHandler, HttpHandler>();
