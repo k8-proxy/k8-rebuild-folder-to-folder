@@ -63,7 +63,7 @@
 
 * Select below configuration for next steps (available on bottom right corner):
 
-      - Choose Instance Type          :     t2.micro 
+      - Choose Instance Type          :     t2.large 
       - COnfiguration Instance details:     Select specific VPC and Subnet (you can use default but make sure its the same for both k8-f2f-user and k8-f2f-user instances)
       - Add Storage (disk space)      :     At least 20G
       - Add Tags                      :     Can be skipped
